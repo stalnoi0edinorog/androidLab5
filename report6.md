@@ -137,9 +137,99 @@
 ### Задача 2. Загрузка картинки в фоновом потоке (AsyncTask) 
 Необходимо создать приложение, которое скачивает картинку из интернета и размещает ее в `ImaveView` в `Activity`. За основу можно взять [код со StackOverflow](https://stackoverflow.com/a/9288544).
 
+Добавим разрешение на доступ к Интернету в AndroidManifest:
+
+      <uses-permission android:name="android.permission.INTERNET" />
+
+Листинг MainActivity:
+
+      const val URL = "https://i.ibb.co/4j5sZsJ/cat.jpg"
+
+      class MainActivity : AppCompatActivity() {
+
+          override fun onCreate(savedInstanceState: Bundle?) {
+              super.onCreate(savedInstanceState)
+
+              val binding = ActivityMainBinding.inflate(layoutInflater)
+
+              setContentView(binding.root)
+
+              binding.button.setOnClickListener {
+                  DownloadImageTask(binding).execute(URL)
+              }
+          }
+
+          inner class DownloadImageTask(private val binding: ActivityMainBinding)
+              : AsyncTask<String, Void, Bitmap>() {
+
+              override fun doInBackground(vararg params: String?): Bitmap? {
+                  val urlDisplay = params.first()
+                  var image: Bitmap? = null
+
+                  try {
+                      val inputStream: InputStream = URL(urlDisplay).openStream()
+                      image = BitmapFactory.decodeStream(inputStream)
+                  } catch (e: Exception) {
+                      Log.e("Errror", e.message.toString())
+                      e.printStackTrace()
+                  }
+                  return image
+              }
+
+              override fun onPostExecute(result: Bitmap?) {
+                  super.onPostExecute(result)
+                  binding.image.setImageBitmap(result)
+                  binding.button.visibility = INVISIBLE
+              }
+          }
+      }
+      
+Создаю объект URL и передаю в его конструктор адрес, URL которого передается в виде текстовой строки. В процессе создания объекта проверяется заданный адрес URL.. Если адрес указан неверно, возникает исключение MalformedURLException. После вызываю openStream() и считываю информацию. 
+
+Bitmap - класс, предназначенный для работы с растровыми изображениями. 
+
+Класс BitmapFactory позволяет создать объект Bitmap из файла, потока или байтового массива. С его помощью преобразую входной поток в картинку. 
+
+В методе onPostExecute() устанвливаю картинку в соответствующее View и делаю невидимой кнопку, чтобы она не перекрывала картинку.
+      
+При запуске приложения видим следующее:
+
+![before](forReport/screen1.JPG)
+
+После нажатия на кнопку: 
+
+![after](forReport/screen2.JPG)
+
 ### Задача 3. Загрузка картинки в фоновом потоке (Kotlin Coroutines) 
 Переписать предыдущее приложение с использованием Kotlin Coroutines.
+ʘ‿ʘ 
 
 ### Задача 4. Использование сторонних библиотек 
 Многие "стандартные" задачи имеют "стандартные" решения. Задача скачивания изображения в фоне возникает настолько часто, что уже сравнительно давно решение этой задачи занимает всего лишь несколько строчек. Нужно убедиться в этом на примере одной (любой) библиотеки [Glide](https://github.com/bumptech/glide#how-do-i-use-glide), [picasso](https://square.github.io/picasso/) или [fresco](https://frescolib.org/docs/index.html).
 
+Буду использовать библиотеку Picasso
+
+Листинг PicassoTask:
+
+      class PicassoTask: AppCompatActivity() {
+          private lateinit var binding: ActivityMainBinding
+
+          override fun onCreate(savedInstanceState: Bundle?) {
+              super.onCreate(savedInstanceState)
+              binding = ActivityMainBinding.inflate(layoutInflater)
+              setContentView(binding.root)
+
+              binding.button.setOnClickListener {
+                  Picasso.get().load(URL).into(binding.image)
+                  binding.button.visibility = INVISIBLE
+              }
+          }
+      }
+      
+Решение задачи скачивания и установки изображения во View действительно занимает всего одну строчку. 
+
+Метод get() возвращает класс экземпляра Picasso. 
+
+Метод load() запускает запрос изображения с использованием указанного пути. Это может быть URL, файловый ресурс, ресурс контента или ресурс Android.
+
+Метод into() передаёт результат загрузки - изображение - во View.
